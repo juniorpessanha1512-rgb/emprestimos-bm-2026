@@ -1,7 +1,7 @@
 {
   "buildCommand": "pnpm build",
-  "outputDirectory": "dist/client",
-  "framework": "vite",
+  "outputDirectory": "dist",
+
   "cleanUrls": true,
   "rewrites": [
     {
