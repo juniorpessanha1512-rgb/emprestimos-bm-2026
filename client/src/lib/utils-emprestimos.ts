@@ -186,3 +186,48 @@ export function carregarDados(): DadosApp {
 export function salvarDados(dados: DadosApp): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
 }
+
+
+/**
+ * Calcula o total de juros previstos para o mês atual
+ */
+export function calcularJurosPrevistosDoMes(emprestimos: Emprestimo[]): number {
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+
+  return emprestimos
+    .filter(e => {
+      // Verifica se o empréstimo não foi pago ainda
+      if (e.status === 'pago') return false;
+
+      // Verifica se o vencimento é neste mês
+      const dataVencimento = new Date(e.dataVencimento);
+      return dataVencimento.getMonth() === mesAtual && dataVencimento.getFullYear() === anoAtual;
+    })
+    .reduce((sum, e) => sum + e.valorJuros, 0);
+}
+
+/**
+ * Calcula o total de juros já recebidos no mês
+ */
+export function calcularJurosRecebidosDoMes(emprestimos: Emprestimo[], pagamentos: any[]): number {
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+
+  return pagamentos
+    .filter(p => {
+      const dataPagamento = new Date(p.dataPagamento);
+      return dataPagamento.getMonth() === mesAtual && dataPagamento.getFullYear() === anoAtual;
+    })
+    .reduce((sum, p) => {
+      const emprestimo = emprestimos.find(e => e.id === p.emprestimoId);
+      if (emprestimo) {
+        // Calcula a proporção de juros no pagamento
+        const proporcaoJuros = emprestimo.valorJuros / emprestimo.valorTotal;
+        return sum + (p.valorPago * proporcaoJuros);
+      }
+      return sum;
+    }, 0);
+}

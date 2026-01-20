@@ -35,50 +35,52 @@ export default function Home() {
 
   if (!autenticado) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        {/* Background pattern com dólares */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="text-8xl font-bold text-gold-500 absolute top-10 left-10">$</div>
-          <div className="text-8xl font-bold text-gold-500 absolute bottom-20 right-20">$</div>
-          <div className="text-6xl font-bold text-gold-500 absolute top-1/2 left-1/4">$</div>
-          <div className="text-6xl font-bold text-gold-500 absolute bottom-1/3 right-1/3">$</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Elementos decorativos de fundo */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 right-20 w-72 h-72 bg-amber-500 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-500 rounded-full blur-3xl"></div>
         </div>
 
-        <Card className="w-full max-w-md border-2 border-gold-500 shadow-2xl">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="bg-slate-900 p-4 rounded-lg border-2 border-gold-500">
-                <DollarSign className="w-8 h-8 text-gold-500" />
+        <Card className="w-full max-w-md border-0 shadow-2xl relative z-10 bg-white">
+          <CardHeader className="text-center pb-8">
+            <div className="flex justify-center mb-6">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-4 rounded-xl border border-amber-500/30 shadow-lg">
+                <DollarSign className="w-8 h-8 text-amber-500" />
               </div>
             </div>
-            <CardTitle className="text-2xl text-slate-900">Empréstimos BM 2026</CardTitle>
-            <CardDescription className="text-slate-600">Gerenciador Profissional de Empréstimos</CardDescription>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+              Empréstimos BM 2026
+            </CardTitle>
+            <CardDescription className="text-slate-600 mt-2 font-medium">
+              Gerenciador Profissional de Empréstimos
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-6">
               <div>
-                <Label htmlFor="senha" className="text-slate-700 font-semibold">
+                <Label htmlFor="senha" className="text-slate-700 font-semibold text-sm">
                   Senha de Acesso
                 </Label>
                 <Input
                   id="senha"
                   type="password"
-                  placeholder="Digite sua senha"
+                  placeholder="••••••••"
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
-                  className="mt-2 border-2 border-slate-300 focus:border-gold-500"
+                  className="mt-2 border-2 border-slate-200 focus:border-amber-500 focus:ring-amber-500 bg-slate-50 text-slate-900 placeholder-slate-400"
                   autoFocus
                 />
               </div>
               <Button
                 type="submit"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2"
+                className="w-full bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg"
               >
                 🔐 Acessar Sistema
               </Button>
             </form>
-            <p className="text-xs text-slate-500 text-center mt-4">
-              Sistema seguro de gestão de empréstimos
+            <p className="text-xs text-slate-500 text-center mt-6 font-medium">
+              Sistema seguro e criptografado de gestão de empréstimos
             </p>
           </CardContent>
         </Card>
@@ -89,122 +91,132 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 w-48 h-screen bg-slate-900 text-white p-6 shadow-lg">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="bg-gold-500 p-2 rounded-lg">
+      <div className="fixed left-0 top-0 w-64 h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-white p-6 shadow-2xl border-r border-amber-500/10">
+        <div className="flex items-center gap-3 mb-10">
+          <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-3 rounded-lg shadow-lg">
             <DollarSign className="w-6 h-6 text-slate-900" />
           </div>
           <div>
-            <h1 className="font-bold text-sm">Empréstimos</h1>
+            <h1 className="font-bold text-lg">Empréstimos</h1>
             <p className="text-xs text-slate-400">BM 2026</p>
           </div>
         </div>
 
-        <nav className="space-y-2">
+        <nav className="space-y-2 mb-8">
           <button
             onClick={() => setPaginaAtiva('dashboard')}
-            className={`w-full text-left px-4 py-2 rounded-lg transition ${
+            className={`w-full text-left px-4 py-3 rounded-lg transition font-medium ${
               paginaAtiva === 'dashboard'
-                ? 'bg-gold-500 text-slate-900 font-bold'
-                : 'hover:bg-slate-800'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 shadow-lg'
+                : 'text-slate-300 hover:bg-slate-800/50'
             }`}
           >
             📊 Dashboard
           </button>
           <button
             onClick={() => setPaginaAtiva('clientes')}
-            className={`w-full text-left px-4 py-2 rounded-lg transition ${
+            className={`w-full text-left px-4 py-3 rounded-lg transition font-medium ${
               paginaAtiva === 'clientes'
-                ? 'bg-gold-500 text-slate-900 font-bold'
-                : 'hover:bg-slate-800'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 shadow-lg'
+                : 'text-slate-300 hover:bg-slate-800/50'
             }`}
           >
             👥 Clientes
           </button>
           <button
             onClick={() => setPaginaAtiva('emprestimos')}
-            className={`w-full text-left px-4 py-2 rounded-lg transition ${
+            className={`w-full text-left px-4 py-3 rounded-lg transition font-medium ${
               paginaAtiva === 'emprestimos'
-                ? 'bg-gold-500 text-slate-900 font-bold'
-                : 'hover:bg-slate-800'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 shadow-lg'
+                : 'text-slate-300 hover:bg-slate-800/50'
             }`}
           >
             💰 Empréstimos
           </button>
           <button
             onClick={() => setPaginaAtiva('pagamentos')}
-            className={`w-full text-left px-4 py-2 rounded-lg transition ${
+            className={`w-full text-left px-4 py-3 rounded-lg transition font-medium ${
               paginaAtiva === 'pagamentos'
-                ? 'bg-gold-500 text-slate-900 font-bold'
-                : 'hover:bg-slate-800'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 shadow-lg'
+                : 'text-slate-300 hover:bg-slate-800/50'
             }`}
           >
             ✅ Pagamentos
           </button>
         </nav>
 
-        <button
-          onClick={handleLogout}
-          className="w-full mt-8 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition flex items-center gap-2"
-        >
-          <LogOut className="w-4 h-4" />
-          Sair
-        </button>
+        <div className="border-t border-slate-700 pt-6">
+          <button
+            onClick={handleLogout}
+            className="w-full px-4 py-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition flex items-center gap-2 font-medium"
+          >
+            <LogOut className="w-4 h-4" />
+            Sair
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="ml-48 p-8">
+      <div className="ml-64 p-8">
         {/* Quick Stats */}
         {paginaAtiva === 'dashboard' && (
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            <Card className="border-l-4 border-l-blue-500">
+          <div className="grid grid-cols-4 gap-6 mb-8">
+            <Card className="border-0 shadow-lg hover:shadow-xl transition bg-white">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">Total Emprestado</p>
-                    <p className="text-2xl font-bold text-slate-900">
+                    <p className="text-sm text-slate-600 font-medium">Total Emprestado</p>
+                    <p className="text-3xl font-bold text-slate-900 mt-2">
                       R$ {(estatisticas.totalEmprestados / 1000).toFixed(1)}k
                     </p>
                   </div>
-                  <DollarSign className="w-8 h-8 text-blue-500 opacity-50" />
+                  <div className="bg-blue-100 p-4 rounded-lg">
+                    <DollarSign className="w-8 h-8 text-blue-600" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-green-500">
+            <Card className="border-0 shadow-lg hover:shadow-xl transition bg-white">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">Total Recebido</p>
-                    <p className="text-2xl font-bold text-slate-900">
+                    <p className="text-sm text-slate-600 font-medium">Total Recebido</p>
+                    <p className="text-3xl font-bold text-green-600 mt-2">
                       R$ {(estatisticas.totalRecebido / 1000).toFixed(1)}k
                     </p>
                   </div>
-                  <TrendingUp className="w-8 h-8 text-green-500 opacity-50" />
+                  <div className="bg-green-100 p-4 rounded-lg">
+                    <TrendingUp className="w-8 h-8 text-green-600" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-orange-500">
+            <Card className="border-0 shadow-lg hover:shadow-xl transition bg-white">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">Próximos a Vencer</p>
-                    <p className="text-2xl font-bold text-slate-900">{estatisticas.emprestimosPorStatus.proximo}</p>
+                    <p className="text-sm text-slate-600 font-medium">Próximos a Vencer</p>
+                    <p className="text-3xl font-bold text-amber-600 mt-2">{estatisticas.emprestimosPorStatus.proximo}</p>
                   </div>
-                  <Clock className="w-8 h-8 text-orange-500 opacity-50" />
+                  <div className="bg-amber-100 p-4 rounded-lg">
+                    <Clock className="w-8 h-8 text-amber-600" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-red-500">
+            <Card className="border-0 shadow-lg hover:shadow-xl transition bg-white">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">Vencidos</p>
-                    <p className="text-2xl font-bold text-slate-900">{estatisticas.emprestimosPorStatus.vencido}</p>
+                    <p className="text-sm text-slate-600 font-medium">Vencidos</p>
+                    <p className="text-3xl font-bold text-red-600 mt-2">{estatisticas.emprestimosPorStatus.vencido}</p>
                   </div>
-                  <AlertCircle className="w-8 h-8 text-red-500 opacity-50" />
+                  <div className="bg-red-100 p-4 rounded-lg">
+                    <AlertCircle className="w-8 h-8 text-red-600" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
