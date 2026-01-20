@@ -1,5 +1,6 @@
 /**
  * Tipos e Interfaces para o Sistema de Empréstimos BM 2026
+ * Modelo: Juros Fixos com Vencimento Único
  */
 
 export interface Cliente {
@@ -15,45 +16,34 @@ export interface Cliente {
 export interface Emprestimo {
   id: string;
   clienteId: string;
-  valorPrincipal: number;
-  taxaJuros: number; // % ao mês
-  dataInicio: string;
-  periodo: number; // em meses
-  status: 'ativo' | 'quitado' | 'atrasado';
-  saldoDevedor: number;
-  totalPago: number;
-  dataUltimoPagamento?: string;
-}
-
-export interface Parcela {
-  id: string;
-  emprestimoId: string;
-  numeroParcela: number;
-  dataVencimento: string;
-  valorPrincipal: number;
-  jurosCalculado: number;
-  valorTotal: number;
-  status: 'pendente' | 'pago' | 'atrasado';
-  dataPagamento?: string;
-  valorPago?: number;
+  clienteNome: string;
+  valorPrincipal: number; // Ex: 1000
+  percentualJuros: number; // Ex: 30 para 30%
+  valorJuros: number; // Valor calculado (ex: 300)
+  valorTotal: number; // Principal + Juros (ex: 1300)
+  periodoTipo: 'semana' | 'quinzena' | 'mes'; // Tipo de período
+  dataEmprestimo: string; // Data de criação (ISO)
+  dataVencimento: string; // Data de vencimento (ISO)
+  diasParaVencer: number; // Calculado automaticamente
+  status: 'pendente' | 'pago' | 'vencido' | 'proximo'; // proximo = próximo a vencer
+  dataPagamento?: string; // Data quando foi pago
+  valorPago?: number; // Valor pago
+  notas?: string;
 }
 
 export interface Pagamento {
   id: string;
   emprestimoId: string;
-  parcelaId?: string;
+  clienteNome: string;
+  valorPago: number;
   dataPagamento: string;
-  valorJuros: number;
-  valorAmortizacao: number;
-  valorTotal: number;
-  tipo: 'apenas-juros' | 'juros-amortizacao' | 'quitacao-total';
-  saldoDevedorApos: number;
+  tipo: 'total' | 'parcial';
+  notas?: string;
 }
 
 export interface DadosApp {
   clientes: Cliente[];
   emprestimos: Emprestimo[];
-  parcelas: Parcela[];
   pagamentos: Pagamento[];
 }
 
@@ -62,10 +52,12 @@ export interface EstatisticasDashboard {
   totalEmprestados: number;
   totalRecebido: number;
   totalEmAberto: number;
-  totalAtrasado: number;
+  totalVencidos: number;
+  totalProximosAVencer: number;
   emprestimosPorStatus: {
-    ativo: number;
-    quitado: number;
-    atrasado: number;
+    pendente: number;
+    pago: number;
+    vencido: number;
+    proximo: number;
   };
 }

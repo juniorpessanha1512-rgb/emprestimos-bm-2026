@@ -1,17 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { DadosApp, Cliente, Emprestimo, Parcela, Pagamento } from '@/lib/types';
+import { Cliente, Emprestimo, Pagamento, DadosApp } from '@/lib/types';
 import {
   carregarDados,
   salvarDados,
-  criarCliente,
-  criarEmprestimo,
-  gerarCronograma,
-  registrarPagamento,
-  atualizarSaldoDevedor,
-  obterEmprestimosDoCliente,
-  obterParcelasDoEmprestimo,
-  obterPagamentosDoEmprestimo,
-  marcarParcelaComoPaga,
+  gerarId,
+  calcularJuros,
+  calcularDataVencimento,
+  calcularDiasParaVencer,
+  determinarStatus,
   calcularEstatisticas,
 } from '@/lib/utils-emprestimos';
 
@@ -19,30 +15,26 @@ interface EmprestimosContextType {
   dados: DadosApp;
   
   // Clientes
-  adicionarCliente: (nome: string, cpf: string, telefone: string, email: string, endereco?: string) => void;
-  atualizarCliente: (cliente: Cliente) => void;
-  deletarCliente: (clienteId: string) => void;
+  adicionarCliente: (cliente: Omit<Cliente, 'id' | 'dataCriacao'>) => void;
+  atualizarCliente: (id: string, cliente: Partial<Cliente>) => void;
+  deletarCliente: (id: string) => void;
   
   // Empréstimos
-  adicionarEmprestimo: (clienteId: string, valorPrincipal: number, taxaJuros: number, periodo: number) => void;
-  atualizarEmprestimo: (emprestimo: Emprestimo) => void;
-  deletarEmprestimo: (emprestimoId: string) => void;
+  adicionarEmprestimo: (emprestimoData: {
+    clienteId: string;
+    clienteNome: string;
+    valorPrincipal: number;
+    percentualJuros: number;
+    periodoTipo: 'semana' | 'quinzena' | 'mes';
+  }) => void;
+  atualizarEmprestimo: (id: string, emprestimo: Partial<Emprestimo>) => void;
+  deletarEmprestimo: (id: string) => void;
   
   // Pagamentos
-  registrarPagamentoEmprestimo: (
-    emprestimoId: string,
-    valorJuros: number,
-    valorAmortizacao: number,
-    tipo: 'apenas-juros' | 'juros-amortizacao' | 'quitacao-total'
-  ) => void;
+  adicionarPagamento: (pagamento: Omit<Pagamento, 'id'>) => void;
   
-  // Utilidades
-  obterClientePorId: (clienteId: string) => Cliente | undefined;
-  obterEmprestimoPorId: (emprestimoId: string) => Emprestimo | undefined;
-  obterEmprestimosCliente: (clienteId: string) => Emprestimo[];
-  obterParcelasEmprestimo: (emprestimoId: string) => Parcela[];
-  obterPagamentosEmprestimo: (emprestimoId: string) => Pagamento[];
-  calcularEstatisticas: () => ReturnType<typeof calcularEstatisticas>;
+  // Estatísticas
+  estatisticas: ReturnType<typeof calcularEstatisticas>;
 }
 
 const EmprestimosContext = createContext<EmprestimosContextType | undefined>(undefined);
@@ -50,154 +42,136 @@ const EmprestimosContext = createContext<EmprestimosContextType | undefined>(und
 export function EmprestimosProvider({ children }: { children: React.ReactNode }) {
   const [dados, setDados] = useState<DadosApp>(() => carregarDados());
 
-  // Salvar dados sempre que mudarem
+  // Salvar dados sempre que mudam
   useEffect(() => {
     salvarDados(dados);
   }, [dados]);
 
-  const adicionarCliente = (
-    nome: string,
-    cpf: string,
-    telefone: string,
-    email: string,
-    endereco?: string
-  ) => {
-    const novoCliente = criarCliente(nome, cpf, telefone, email, endereco);
-    setDados({
-      ...dados,
-      clientes: [...dados.clientes, novoCliente],
-    });
+  const adicionarCliente = (clienteData: Omit<Cliente, 'id' | 'dataCriacao'>) => {
+    const novoCliente: Cliente = {
+      ...clienteData,
+      id: gerarId(),
+      dataCriacao: new Date().toISOString().split('T')[0],
+    };
+    setDados(prev => ({
+      ...prev,
+      clientes: [...prev.clientes, novoCliente],
+    }));
   };
 
-  const atualizarCliente = (cliente: Cliente) => {
-    setDados({
-      ...dados,
-      clientes: dados.clientes.map((c) => (c.id === cliente.id ? cliente : c)),
-    });
+  const atualizarCliente = (id: string, clienteAtualizado: Partial<Cliente>) => {
+    setDados(prev => ({
+      ...prev,
+      clientes: prev.clientes.map(c => c.id === id ? { ...c, ...clienteAtualizado } : c),
+    }));
   };
 
-  const deletarCliente = (clienteId: string) => {
-    setDados({
-      ...dados,
-      clientes: dados.clientes.filter((c) => c.id !== clienteId),
-      emprestimos: dados.emprestimos.filter((e) => e.clienteId !== clienteId),
-      parcelas: dados.parcelas.filter(
-        (p) => !dados.emprestimos.find((e) => e.clienteId === clienteId && e.id === p.emprestimoId)
-      ),
-    });
+  const deletarCliente = (id: string) => {
+    setDados(prev => ({
+      ...prev,
+      clientes: prev.clientes.filter(c => c.id !== id),
+      emprestimos: prev.emprestimos.filter(e => e.clienteId !== id),
+    }));
   };
 
-  const adicionarEmprestimo = (
-    clienteId: string,
-    valorPrincipal: number,
-    taxaJuros: number,
-    periodo: number
-  ) => {
-    const novoEmprestimo = criarEmprestimo(clienteId, valorPrincipal, taxaJuros, periodo);
-    const novasParcelas = gerarCronograma(
-      novoEmprestimo.id,
-      valorPrincipal,
-      taxaJuros,
-      periodo,
-      novoEmprestimo.dataInicio
-    );
+  const adicionarEmprestimo = (emprestimoData: {
+    clienteId: string;
+    clienteNome: string;
+    valorPrincipal: number;
+    percentualJuros: number;
+    periodoTipo: 'semana' | 'quinzena' | 'mes';
+  }) => {
+    const dataEmprestimo = new Date().toISOString().split('T')[0];
+    const dataVencimento = calcularDataVencimento(dataEmprestimo, emprestimoData.periodoTipo);
+    const valorJuros = calcularJuros(emprestimoData.valorPrincipal, emprestimoData.percentualJuros);
+    const diasParaVencer = calcularDiasParaVencer(dataVencimento);
+    const status = determinarStatus(dataVencimento, false);
 
-    setDados({
-      ...dados,
-      emprestimos: [...dados.emprestimos, novoEmprestimo],
-      parcelas: [...dados.parcelas, ...novasParcelas],
-    });
-  };
-
-  const atualizarEmprestimo = (emprestimo: Emprestimo) => {
-    setDados({
-      ...dados,
-      emprestimos: dados.emprestimos.map((e) => (e.id === emprestimo.id ? emprestimo : e)),
-    });
-  };
-
-  const deletarEmprestimo = (emprestimoId: string) => {
-    setDados({
-      ...dados,
-      emprestimos: dados.emprestimos.filter((e) => e.id !== emprestimoId),
-      parcelas: dados.parcelas.filter((p) => p.emprestimoId !== emprestimoId),
-      pagamentos: dados.pagamentos.filter((p) => p.emprestimoId !== emprestimoId),
-    });
-  };
-
-  const registrarPagamentoEmprestimo = (
-    emprestimoId: string,
-    valorJuros: number,
-    valorAmortizacao: number,
-    tipo: 'apenas-juros' | 'juros-amortizacao' | 'quitacao-total'
-  ) => {
-    const emprestimo = dados.emprestimos.find((e) => e.id === emprestimoId);
-    if (!emprestimo) return;
-
-    const novoPagamento = registrarPagamento(
-      emprestimoId,
-      undefined,
+    const novoEmprestimo: Emprestimo = {
+      id: gerarId(),
+      clienteId: emprestimoData.clienteId,
+      clienteNome: emprestimoData.clienteNome,
+      valorPrincipal: emprestimoData.valorPrincipal,
+      percentualJuros: emprestimoData.percentualJuros,
       valorJuros,
-      valorAmortizacao,
-      tipo
-    );
+      valorTotal: emprestimoData.valorPrincipal + valorJuros,
+      periodoTipo: emprestimoData.periodoTipo,
+      dataEmprestimo,
+      dataVencimento,
+      diasParaVencer,
+      status,
+    };
 
-    const emprestimoAtualizado = atualizarSaldoDevedor(emprestimo, valorAmortizacao);
-    emprestimoAtualizado.totalPago += valorJuros + valorAmortizacao;
-    emprestimoAtualizado.dataUltimoPagamento = novoPagamento.dataPagamento;
+    setDados(prev => ({
+      ...prev,
+      emprestimos: [...prev.emprestimos, novoEmprestimo],
+    }));
+  };
 
-    setDados({
-      ...dados,
-      emprestimos: dados.emprestimos.map((e) =>
-        e.id === emprestimoId ? emprestimoAtualizado : e
-      ),
-      pagamentos: [...dados.pagamentos, novoPagamento],
+  const atualizarEmprestimo = (id: string, emprestimoAtualizado: Partial<Emprestimo>) => {
+    setDados(prev => ({
+      ...prev,
+      emprestimos: prev.emprestimos.map(e => e.id === id ? { ...e, ...emprestimoAtualizado } : e),
+    }));
+  };
+
+  const deletarEmprestimo = (id: string) => {
+    setDados(prev => ({
+      ...prev,
+      emprestimos: prev.emprestimos.filter(e => e.id !== id),
+      pagamentos: prev.pagamentos.filter(p => p.emprestimoId !== id),
+    }));
+  };
+
+  const adicionarPagamento = (pagamentoData: Omit<Pagamento, 'id'>) => {
+    const novoPagamento: Pagamento = {
+      ...pagamentoData,
+      id: gerarId(),
+    };
+
+    setDados(prev => {
+      const emprestimoAtualizado = prev.emprestimos.find(e => e.id === pagamentoData.emprestimoId);
+      
+      if (emprestimoAtualizado) {
+        const novoStatus: 'pendente' | 'pago' | 'vencido' | 'proximo' = 
+          pagamentoData.tipo === 'total' ? 'pago' : emprestimoAtualizado.status;
+
+        return {
+          ...prev,
+          pagamentos: [...prev.pagamentos, novoPagamento],
+          emprestimos: prev.emprestimos.map(e => 
+            e.id === pagamentoData.emprestimoId 
+              ? {
+                  ...e,
+                  status: novoStatus,
+                  dataPagamento: new Date().toISOString().split('T')[0],
+                  valorPago: (e.valorPago || 0) + pagamentoData.valorPago,
+                }
+              : e
+          ),
+        };
+      }
+
+      return prev;
     });
   };
 
-  const obterClientePorId = (clienteId: string) => {
-    return dados.clientes.find((c) => c.id === clienteId);
-  };
-
-  const obterEmprestimoPorId = (emprestimoId: string) => {
-    return dados.emprestimos.find((e) => e.id === emprestimoId);
-  };
-
-  const obterEmprestimosCliente = (clienteId: string) => {
-    return obterEmprestimosDoCliente(dados, clienteId);
-  };
-
-  const obterParcelasEmprestimo = (emprestimoId: string) => {
-    return obterParcelasDoEmprestimo(dados, emprestimoId);
-  };
-
-  const obterPagamentosEmprestimo = (emprestimoId: string) => {
-    return obterPagamentosDoEmprestimo(dados, emprestimoId);
-  };
-
-  const calcularStats = () => {
-    return calcularEstatisticas(dados);
-  };
-
-  const value: EmprestimosContextType = {
-    dados,
-    adicionarCliente,
-    atualizarCliente,
-    deletarCliente,
-    adicionarEmprestimo,
-    atualizarEmprestimo,
-    deletarEmprestimo,
-    registrarPagamentoEmprestimo,
-    obterClientePorId,
-    obterEmprestimoPorId,
-    obterEmprestimosCliente,
-    obterParcelasEmprestimo,
-    obterPagamentosEmprestimo,
-    calcularEstatisticas: calcularStats,
-  };
+  const estatisticas = calcularEstatisticas(dados);
 
   return (
-    <EmprestimosContext.Provider value={value}>
+    <EmprestimosContext.Provider
+      value={{
+        dados,
+        adicionarCliente,
+        atualizarCliente,
+        deletarCliente,
+        adicionarEmprestimo,
+        atualizarEmprestimo,
+        deletarEmprestimo,
+        adicionarPagamento,
+        estatisticas,
+      }}
+    >
       {children}
     </EmprestimosContext.Provider>
   );

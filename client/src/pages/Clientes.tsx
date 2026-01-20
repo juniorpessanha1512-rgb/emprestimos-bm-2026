@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useEmprestimos } from '@/contexts/EmprestimosContext';
-import { Trash2, Plus, User } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Clientes() {
-  const { dados, adicionarCliente, deletarCliente, obterEmprestimosCliente } = useEmprestimos();
+  const { dados, adicionarCliente, deletarCliente } = useEmprestimos();
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
@@ -20,27 +20,21 @@ export default function Clientes() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.nome || !formData.cpf || !formData.telefone || !formData.email) {
-      toast.error('Preencha todos os campos obrigatórios!');
+      toast.error('Preencha os campos obrigatórios!');
       return;
     }
 
-    adicionarCliente(
-      formData.nome,
-      formData.cpf,
-      formData.telefone,
-      formData.email,
-      formData.endereco
-    );
-
-    setFormData({
-      nome: '',
-      cpf: '',
-      telefone: '',
-      email: '',
-      endereco: '',
+    adicionarCliente({
+      nome: formData.nome,
+      cpf: formData.cpf,
+      telefone: formData.telefone,
+      email: formData.email,
+      endereco: formData.endereco,
     });
+
+    setFormData({ nome: '', cpf: '', telefone: '', email: '', endereco: '' });
     setMostrarFormulario(false);
     toast.success('Cliente adicionado com sucesso!');
   };
@@ -48,21 +42,20 @@ export default function Clientes() {
   const handleDelete = (clienteId: string) => {
     if (window.confirm('Tem certeza que deseja deletar este cliente?')) {
       deletarCliente(clienteId);
-      toast.success('Cliente deletado com sucesso!');
+      toast.success('Cliente deletado!');
     }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Cabeçalho */}
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-[#1a365d] mb-2">Clientes</h1>
-          <p className="text-gray-600">Gerenciar clientes e seus empréstimos</p>
+          <h1 className="text-3xl font-bold text-slate-900">Clientes</h1>
+          <p className="text-slate-600">Gerenciar clientes e seus empréstimos</p>
         </div>
         <Button
           onClick={() => setMostrarFormulario(!mostrarFormulario)}
-          className="bg-[#1a365d] hover:bg-[#0f1f3a] text-white"
+          className="bg-slate-900 hover:bg-slate-800"
         >
           <Plus className="w-4 h-4 mr-2" />
           Novo Cliente
@@ -71,152 +64,111 @@ export default function Clientes() {
 
       {/* Formulário */}
       {mostrarFormulario && (
-        <Card className="p-6 border-2 border-[#d4af37] shadow-md">
-          <h2 className="text-2xl font-bold text-[#1a365d] mb-6">Adicionar Cliente</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome" className="text-[#1a365d] font-semibold">
-                  Nome *
-                </Label>
-                <Input
-                  id="nome"
-                  placeholder="Nome completo"
-                  value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  className="border-[#d4af37] focus:border-[#1a365d]"
-                />
+        <Card className="border-2 border-gold-500">
+          <CardHeader>
+            <CardTitle>Adicionar Cliente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="nome">Nome *</Label>
+                  <Input
+                    id="nome"
+                    placeholder="Nome completo"
+                    value={formData.nome}
+                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cpf">CPF *</Label>
+                  <Input
+                    id="cpf"
+                    placeholder="000.000.000-00"
+                    value={formData.cpf}
+                    onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="telefone">Telefone *</Label>
+                  <Input
+                    id="telefone"
+                    placeholder="(11) 99999-9999"
+                    value={formData.telefone}
+                    onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="email@exemplo.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cpf" className="text-[#1a365d] font-semibold">
-                  CPF *
-                </Label>
-                <Input
-                  id="cpf"
-                  placeholder="000.000.000-00"
-                  value={formData.cpf}
-                  onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
-                  className="border-[#d4af37] focus:border-[#1a365d]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="telefone" className="text-[#1a365d] font-semibold">
-                  Telefone *
-                </Label>
-                <Input
-                  id="telefone"
-                  placeholder="(11) 99999-9999"
-                  value={formData.telefone}
-                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                  className="border-[#d4af37] focus:border-[#1a365d]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-[#1a365d] font-semibold">
-                  Email *
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@exemplo.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="border-[#d4af37] focus:border-[#1a365d]"
-                />
-              </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="endereco" className="text-[#1a365d] font-semibold">
-                  Endereço
-                </Label>
+              <div>
+                <Label htmlFor="endereco">Endereço</Label>
                 <Input
                   id="endereco"
                   placeholder="Rua, número, complemento"
                   value={formData.endereco}
                   onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                  className="border-[#d4af37] focus:border-[#1a365d]"
+                  className="mt-2"
                 />
               </div>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <Button
-                type="submit"
-                className="flex-1 bg-[#1a365d] hover:bg-[#0f1f3a] text-white"
-              >
-                Salvar Cliente
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setMostrarFormulario(false)}
-                variant="outline"
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-            </div>
-          </form>
+              <div className="flex gap-2">
+                <Button type="submit" className="bg-slate-900 hover:bg-slate-800">
+                  Salvar Cliente
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setMostrarFormulario(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </CardContent>
         </Card>
       )}
 
       {/* Lista de Clientes */}
-      <div className="space-y-4">
+      <div>
         {dados.clientes.length === 0 ? (
-          <Card className="p-8 text-center">
-            <User className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">Nenhum cliente cadastrado ainda.</p>
-            <p className="text-gray-400">Clique em "Novo Cliente" para começar.</p>
+          <Card>
+            <CardContent className="pt-6 text-center text-slate-600">
+              Nenhum cliente cadastrado ainda
+            </CardContent>
           </Card>
         ) : (
-          dados.clientes.map((cliente) => {
-            const emprestimos = obterEmprestimosCliente(cliente.id);
-            const totalDevendo = emprestimos.reduce((acc, e) => acc + e.saldoDevedor, 0);
-
-            return (
-              <Card key={cliente.id} className="p-6 border-l-4 border-[#d4af37] shadow-md hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-[#1a365d]">{cliente.nome}</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
-                      <div>
-                        <p className="text-gray-600">CPF</p>
-                        <p className="font-semibold text-[#1a365d]">{cliente.cpf}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Telefone</p>
-                        <p className="font-semibold text-[#1a365d]">{cliente.telefone}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Email</p>
-                        <p className="font-semibold text-[#1a365d]">{cliente.email}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Empréstimos</p>
-                        <p className="font-semibold text-[#d4af37]">{emprestimos.length}</p>
-                      </div>
+          <div className="space-y-3">
+            {dados.clientes.map((cliente) => (
+              <Card key={cliente.id} className="hover:shadow-md transition">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-slate-900">{cliente.nome}</p>
+                      <p className="text-sm text-slate-600">{cliente.cpf} | {cliente.telefone}</p>
+                      <p className="text-sm text-slate-600">{cliente.email}</p>
+                      {cliente.endereco && <p className="text-xs text-slate-500">{cliente.endereco}</p>}
                     </div>
-                    {totalDevendo > 0 && (
-                      <div className="mt-4 p-3 bg-orange-50 rounded-lg">
-                        <p className="text-orange-700 font-semibold">
-                          Total devendo: R$ {totalDevendo.toFixed(2)}
-                        </p>
-                      </div>
-                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(cliente.id)}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => handleDelete(cliente.id)}
-                    variant="ghost"
-                    className="text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
-                </div>
+                </CardContent>
               </Card>
-            );
-          })
+            ))}
+          </div>
         )}
       </div>
     </div>

@@ -1,229 +1,222 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DollarSign, Lock, LogOut, Home as HomeIcon, Users, FileText, BarChart3 } from 'lucide-react';
-import { toast } from 'sonner';
-import Dashboard from '@/pages/Dashboard';
-import Clientes from '@/pages/Clientes';
-import Emprestimos from '@/pages/Emprestimos';
-import Pagamentos from '@/pages/Pagamentos';
-import { EmprestimosProvider } from '@/contexts/EmprestimosContext';
+import { AlertCircle, LogOut, DollarSign, Calendar, TrendingUp, Clock } from 'lucide-react';
+import { useEmprestimos } from '@/contexts/EmprestimosContext';
+import Dashboard from './Dashboard';
+import Clientes from './Clientes';
+import Emprestimos from './Emprestimos';
+import Pagamentos from './Pagamentos';
 
-/**
- * Design: Corporativo Premium - Azul Marinho + Ouro
- * - Tipografia: Playfair Display (títulos), Inter (corpo)
- * - Cores: Azul Marinho (#1a365d), Ouro (#d4af37)
- * - Layout: Sidebar + Conteúdo Principal
- */
+export default function Home() {
+  const [autenticado, setAutenticado] = useState(false);
+  const [senha, setSenha] = useState('');
+  const [paginaAtiva, setPaginaAtiva] = useState<'dashboard' | 'clientes' | 'emprestimos' | 'pagamentos'>('dashboard');
+  const { estatisticas } = useEmprestimos();
 
-type Pagina = 'dashboard' | 'clientes' | 'emprestimos' | 'pagamentos';
-
-function HomeContent() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  const [paginaAtual, setPaginaAtual] = useState<Pagina>('dashboard');
-
-  // Verificar autenticação ao carregar
-  useEffect(() => {
-    const savedAuth = localStorage.getItem('emprestimos-bm-auth');
-    if (savedAuth === 'true') {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  // Lidar com login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === '151612bm') {
-      setIsAuthenticated(true);
-      localStorage.setItem('emprestimos-bm-auth', 'true');
-      setPassword('');
-      toast.success('Bem-vindo ao Empréstimos BM 2026!');
+    if (senha === '151612bm') {
+      setAutenticado(true);
+      setSenha('');
     } else {
-      toast.error('Senha incorreta!');
-      setPassword('');
+      alert('Senha incorreta!');
+      setSenha('');
     }
   };
 
-  // Lidar com logout
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('emprestimos-bm-auth');
-    setPassword('');
-    setPaginaAtual('dashboard');
-    toast.success('Desconectado com sucesso!');
+    setAutenticado(false);
+    setSenha('');
+    setPaginaAtiva('dashboard');
   };
 
-  // Tela de Login
-  if (!isAuthenticated) {
+  if (!autenticado) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{
-          backgroundImage: `url('/images/hero-background.jpg')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-        }}
-      >
-        {/* Overlay escuro para melhor legibilidade */}
-        <div className="absolute inset-0 bg-black/40" />
-
-        <div className="relative z-10 w-full max-w-md">
-          <Card className="border-2 border-[#d4af37] shadow-2xl">
-            <div className="p-8">
-              {/* Logo/Título */}
-              <div className="flex justify-center mb-8">
-                <div className="bg-[#1a365d] rounded-lg p-4">
-                  <DollarSign className="w-12 h-12 text-[#d4af37]" />
-                </div>
-              </div>
-
-              <h1 className="text-3xl font-bold text-center text-[#1a365d] mb-2">
-                Empréstimos BM 2026
-              </h1>
-              <p className="text-center text-gray-600 mb-8">
-                Gerenciador Profissional de Empréstimos
-              </p>
-
-              {/* Formulário de Login */}
-              <form onSubmit={handleLogin} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-[#1a365d] font-semibold">
-                    Senha de Acesso
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Digite sua senha"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pr-10 border-[#d4af37] focus:border-[#1a365d]"
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-[#1a365d] hover:bg-[#0f1f3a] text-white font-semibold py-2 rounded-lg transition-all duration-300"
-                >
-                  <Lock className="w-4 h-4 mr-2" />
-                  Acessar Sistema
-                </Button>
-              </form>
-
-              {/* Rodapé */}
-              <p className="text-center text-sm text-gray-500 mt-6">
-                Sistema seguro de gestão de empréstimos
-              </p>
-            </div>
-          </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        {/* Background pattern com dólares */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="text-8xl font-bold text-gold-500 absolute top-10 left-10">$</div>
+          <div className="text-8xl font-bold text-gold-500 absolute bottom-20 right-20">$</div>
+          <div className="text-6xl font-bold text-gold-500 absolute top-1/2 left-1/4">$</div>
+          <div className="text-6xl font-bold text-gold-500 absolute bottom-1/3 right-1/3">$</div>
         </div>
+
+        <Card className="w-full max-w-md border-2 border-gold-500 shadow-2xl">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="bg-slate-900 p-4 rounded-lg border-2 border-gold-500">
+                <DollarSign className="w-8 h-8 text-gold-500" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl text-slate-900">Empréstimos BM 2026</CardTitle>
+            <CardDescription className="text-slate-600">Gerenciador Profissional de Empréstimos</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="senha" className="text-slate-700 font-semibold">
+                  Senha de Acesso
+                </Label>
+                <Input
+                  id="senha"
+                  type="password"
+                  placeholder="Digite sua senha"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  className="mt-2 border-2 border-slate-300 focus:border-gold-500"
+                  autoFocus
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2"
+              >
+                🔐 Acessar Sistema
+              </Button>
+            </form>
+            <p className="text-xs text-slate-500 text-center mt-4">
+              Sistema seguro de gestão de empréstimos
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  // Tela Principal (Autenticado)
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 w-64 h-screen bg-[#1a365d] text-white shadow-lg flex flex-col overflow-y-auto">
-        {/* Logo */}
-        <div className="p-6 border-b border-[#2d5a8c]">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#d4af37] rounded-lg p-2">
-              <DollarSign className="w-6 h-6 text-[#1a365d]" />
-            </div>
-            <div>
-              <h2 className="font-bold text-lg">Empréstimos</h2>
-              <p className="text-xs text-gray-300">BM 2026</p>
-            </div>
+      <div className="fixed left-0 top-0 w-48 h-screen bg-slate-900 text-white p-6 shadow-lg">
+        <div className="flex items-center gap-2 mb-8">
+          <div className="bg-gold-500 p-2 rounded-lg">
+            <DollarSign className="w-6 h-6 text-slate-900" />
+          </div>
+          <div>
+            <h1 className="font-bold text-sm">Empréstimos</h1>
+            <p className="text-xs text-slate-400">BM 2026</p>
           </div>
         </div>
 
-        {/* Menu */}
-        <nav className="flex-1 p-6 space-y-2">
+        <nav className="space-y-2">
           <button
-            onClick={() => setPaginaAtual('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              paginaAtual === 'dashboard'
-                ? 'bg-[#d4af37] text-[#1a365d] font-semibold'
-                : 'hover:bg-[#2d5a8c] text-white'
+            onClick={() => setPaginaAtiva('dashboard')}
+            className={`w-full text-left px-4 py-2 rounded-lg transition ${
+              paginaAtiva === 'dashboard'
+                ? 'bg-gold-500 text-slate-900 font-bold'
+                : 'hover:bg-slate-800'
             }`}
           >
-            <BarChart3 className="w-5 h-5" />
-            <span>Dashboard</span>
+            📊 Dashboard
           </button>
-
           <button
-            onClick={() => setPaginaAtual('clientes')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              paginaAtual === 'clientes'
-                ? 'bg-[#d4af37] text-[#1a365d] font-semibold'
-                : 'hover:bg-[#2d5a8c] text-white'
+            onClick={() => setPaginaAtiva('clientes')}
+            className={`w-full text-left px-4 py-2 rounded-lg transition ${
+              paginaAtiva === 'clientes'
+                ? 'bg-gold-500 text-slate-900 font-bold'
+                : 'hover:bg-slate-800'
             }`}
           >
-            <Users className="w-5 h-5" />
-            <span>Clientes</span>
+            👥 Clientes
           </button>
-
           <button
-            onClick={() => setPaginaAtual('emprestimos')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              paginaAtual === 'emprestimos'
-                ? 'bg-[#d4af37] text-[#1a365d] font-semibold'
-                : 'hover:bg-[#2d5a8c] text-white'
+            onClick={() => setPaginaAtiva('emprestimos')}
+            className={`w-full text-left px-4 py-2 rounded-lg transition ${
+              paginaAtiva === 'emprestimos'
+                ? 'bg-gold-500 text-slate-900 font-bold'
+                : 'hover:bg-slate-800'
             }`}
           >
-            <FileText className="w-5 h-5" />
-            <span>Empréstimos</span>
+            💰 Empréstimos
           </button>
-
           <button
-            onClick={() => setPaginaAtual('pagamentos')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              paginaAtual === 'pagamentos'
-                ? 'bg-[#d4af37] text-[#1a365d] font-semibold'
-                : 'hover:bg-[#2d5a8c] text-white'
+            onClick={() => setPaginaAtiva('pagamentos')}
+            className={`w-full text-left px-4 py-2 rounded-lg transition ${
+              paginaAtiva === 'pagamentos'
+                ? 'bg-gold-500 text-slate-900 font-bold'
+                : 'hover:bg-slate-800'
             }`}
           >
-            <DollarSign className="w-5 h-5" />
-            <span>Pagamentos</span>
+            ✅ Pagamentos
           </button>
         </nav>
 
-        {/* Logout */}
-        <div className="p-6 border-t border-[#2d5a8c]">
-          <Button
-            onClick={handleLogout}
-            className="w-full bg-[#d4af37] hover:bg-[#c4941f] text-[#1a365d] font-semibold"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
-        </div>
+        <button
+          onClick={handleLogout}
+          className="w-full mt-8 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition flex items-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          Sair
+        </button>
       </div>
 
-      {/* Conteúdo Principal */}
-      <div className="ml-64 p-8">
-        <div className="max-w-7xl mx-auto">
-          {paginaAtual === 'dashboard' && <Dashboard />}
-          {paginaAtual === 'clientes' && <Clientes />}
-          {paginaAtual === 'emprestimos' && <Emprestimos />}
-          {paginaAtual === 'pagamentos' && <Pagamentos />}
-        </div>
+      {/* Main Content */}
+      <div className="ml-48 p-8">
+        {/* Quick Stats */}
+        {paginaAtiva === 'dashboard' && (
+          <div className="grid grid-cols-4 gap-4 mb-8">
+            <Card className="border-l-4 border-l-blue-500">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600">Total Emprestado</p>
+                    <p className="text-2xl font-bold text-slate-900">
+                      R$ {(estatisticas.totalEmprestados / 1000).toFixed(1)}k
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-blue-500 opacity-50" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-green-500">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600">Total Recebido</p>
+                    <p className="text-2xl font-bold text-slate-900">
+                      R$ {(estatisticas.totalRecebido / 1000).toFixed(1)}k
+                    </p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-green-500 opacity-50" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-orange-500">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600">Próximos a Vencer</p>
+                    <p className="text-2xl font-bold text-slate-900">{estatisticas.emprestimosPorStatus.proximo}</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-orange-500 opacity-50" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-red-500">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600">Vencidos</p>
+                    <p className="text-2xl font-bold text-slate-900">{estatisticas.emprestimosPorStatus.vencido}</p>
+                  </div>
+                  <AlertCircle className="w-8 h-8 text-red-500 opacity-50" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Conteúdo das páginas */}
+        {paginaAtiva === 'dashboard' && <Dashboard />}
+        {paginaAtiva === 'clientes' && <Clientes />}
+        {paginaAtiva === 'emprestimos' && <Emprestimos />}
+        {paginaAtiva === 'pagamentos' && <Pagamentos />}
       </div>
     </div>
-  );
-}
-
-export default function Home() {
-  return (
-    <EmprestimosProvider>
-      <HomeContent />
-    </EmprestimosProvider>
   );
 }

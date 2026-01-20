@@ -1,28 +1,73 @@
 /**
- * Utilitários para cálculos de empréstimos e gestão de dados
+ * Utilitários para cálculos de empréstimos com juros fixos
+ * Modelo: Juros fixos com vencimento único
  */
 
-import { Cliente, Emprestimo, Parcela, Pagamento, DadosApp } from './types';
+import { Emprestimo, DadosApp, EstatisticasDashboard } from './types';
 
 const STORAGE_KEY = 'emprestimos-bm-dados';
 
 /**
- * Gera um ID único
+ * Calcula a data de vencimento baseado no período
  */
-export function gerarId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-/**
- * Formata data para string YYYY-MM-DD
- */
-export function formatarData(data: Date | string): string {
-  if (typeof data === 'string') return data;
+export function calcularDataVencimento(dataInicio: string, periodoTipo: 'semana' | 'quinzena' | 'mes'): string {
+  const data = new Date(dataInicio);
+  
+  switch (periodoTipo) {
+    case 'semana':
+      data.setDate(data.getDate() + 7);
+      break;
+    case 'quinzena':
+      data.setDate(data.getDate() + 15);
+      break;
+    case 'mes':
+      data.setMonth(data.getMonth() + 1);
+      break;
+  }
+  
   return data.toISOString().split('T')[0];
 }
 
 /**
- * Formata valor em moeda brasileira
+ * Calcula dias para vencer
+ */
+export function calcularDiasParaVencer(dataVencimento: string): number {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  
+  const vencimento = new Date(dataVencimento);
+  vencimento.setHours(0, 0, 0, 0);
+  
+  const diferenca = vencimento.getTime() - hoje.getTime();
+  return Math.ceil(diferenca / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Determina o status baseado na data de vencimento
+ */
+export function determinarStatus(dataVencimento: string, pago: boolean): 'pendente' | 'pago' | 'vencido' | 'proximo' {
+  if (pago) return 'pago';
+  
+  const diasParaVencer = calcularDiasParaVencer(dataVencimento);
+  
+  if (diasParaVencer < 0) {
+    return 'vencido';
+  } else if (diasParaVencer <= 7) {
+    return 'proximo';
+  } else {
+    return 'pendente';
+  }
+}
+
+/**
+ * Calcula o valor dos juros
+ */
+export function calcularJuros(valorPrincipal: number, percentual: number): number {
+  return (valorPrincipal * percentual) / 100;
+}
+
+/**
+ * Formata moeda brasileira
  */
 export function formatarMoeda(valor: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -32,47 +77,92 @@ export function formatarMoeda(valor: number): string {
 }
 
 /**
- * Calcula juros simples para um período
- * Fórmula: J = P * (r/100) * (t/12) onde t é em meses
+ * Formata data para padrão brasileiro (DD/MM/YYYY)
  */
-export function calcularJuros(principal: number, taxaMensal: number): number {
-  return principal * (taxaMensal / 100);
+export function formatarData(data: string): string {
+  return new Date(data).toLocaleDateString('pt-BR');
 }
 
 /**
- * Gera cronograma de parcelas para um empréstimo
+ * Formata data para ISO (YYYY-MM-DD)
  */
-export function gerarCronograma(
-  emprestimoId: string,
-  valorPrincipal: number,
-  taxaMensal: number,
-  periodo: number,
-  dataInicio: string
-): Parcela[] {
-  const parcelas: Parcela[] = [];
-  const dataInicioObj = new Date(dataInicio);
+export function formatarDataISO(data: Date | string): string {
+  if (typeof data === 'string') return data;
+  return data.toISOString().split('T')[0];
+}
 
-  for (let i = 1; i <= periodo; i++) {
-    const dataVencimento = new Date(dataInicioObj);
-    dataVencimento.setMonth(dataVencimento.getMonth() + i);
+/**
+ * Calcula estatísticas do dashboard
+ */
+export function calcularEstatisticas(dados: DadosApp): EstatisticasDashboard {
+  const emprestimos = dados.emprestimos;
+  
+  const totalEmprestados = emprestimos.reduce((sum, e) => sum + e.valorPrincipal, 0);
+  const totalRecebido = emprestimos
+    .filter(e => e.status === 'pago')
+    .reduce((sum, e) => sum + (e.valorPago || e.valorTotal), 0);
+  
+  const totalEmAberto = emprestimos
+    .filter(e => e.status === 'pendente' || e.status === 'proximo')
+    .reduce((sum, e) => sum + e.valorTotal, 0);
+  
+  const totalVencidos = emprestimos
+    .filter(e => e.status === 'vencido')
+    .reduce((sum, e) => sum + e.valorTotal, 0);
+  
+  const totalProximosAVencer = emprestimos
+    .filter(e => e.status === 'proximo')
+    .reduce((sum, e) => sum + e.valorTotal, 0);
 
-    // Juros são calculados sobre o valor principal a cada mês
-    const jurosCalculado = calcularJuros(valorPrincipal, taxaMensal);
-    const valorTotal = jurosCalculado;
+  return {
+    totalClientes: dados.clientes.length,
+    totalEmprestados,
+    totalRecebido,
+    totalEmAberto,
+    totalVencidos,
+    totalProximosAVencer,
+    emprestimosPorStatus: {
+      pendente: emprestimos.filter(e => e.status === 'pendente').length,
+      pago: emprestimos.filter(e => e.status === 'pago').length,
+      vencido: emprestimos.filter(e => e.status === 'vencido').length,
+      proximo: emprestimos.filter(e => e.status === 'proximo').length,
+    },
+  };
+}
 
-    parcelas.push({
-      id: gerarId(),
-      emprestimoId,
-      numeroParcela: i,
-      dataVencimento: formatarData(dataVencimento),
-      valorPrincipal,
-      jurosCalculado,
-      valorTotal,
-      status: 'pendente',
-    });
+/**
+ * Gera ID único
+ */
+export function gerarId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+/**
+ * Obtém período em dias
+ */
+export function obterPeriodoEmDias(periodoTipo: 'semana' | 'quinzena' | 'mes'): number {
+  switch (periodoTipo) {
+    case 'semana':
+      return 7;
+    case 'quinzena':
+      return 15;
+    case 'mes':
+      return 30;
   }
+}
 
-  return parcelas;
+/**
+ * Obtém label do período
+ */
+export function obterLabelPeriodo(periodoTipo: 'semana' | 'quinzena' | 'mes'): string {
+  switch (periodoTipo) {
+    case 'semana':
+      return '1 Semana';
+    case 'quinzena':
+      return '15 Dias';
+    case 'mes':
+      return '1 Mês';
+  }
 }
 
 /**
@@ -84,7 +174,6 @@ export function carregarDados(): DadosApp {
     return {
       clientes: [],
       emprestimos: [],
-      parcelas: [],
       pagamentos: [],
     };
   }
@@ -96,203 +185,4 @@ export function carregarDados(): DadosApp {
  */
 export function salvarDados(dados: DadosApp): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
-}
-
-/**
- * Cria um novo cliente
- */
-export function criarCliente(
-  nome: string,
-  cpf: string,
-  telefone: string,
-  email: string,
-  endereco?: string
-): Cliente {
-  return {
-    id: gerarId(),
-    nome,
-    cpf,
-    telefone,
-    email,
-    endereco,
-    dataCriacao: formatarData(new Date()),
-  };
-}
-
-/**
- * Cria um novo empréstimo
- */
-export function criarEmprestimo(
-  clienteId: string,
-  valorPrincipal: number,
-  taxaJuros: number,
-  periodo: number
-): Emprestimo {
-  return {
-    id: gerarId(),
-    clienteId,
-    valorPrincipal,
-    taxaJuros,
-    dataInicio: formatarData(new Date()),
-    periodo,
-    status: 'ativo',
-    saldoDevedor: valorPrincipal,
-    totalPago: 0,
-  };
-}
-
-/**
- * Registra um pagamento e atualiza o saldo devedor
- */
-export function registrarPagamento(
-  emprestimoId: string,
-  parcelaId: string | undefined,
-  valorJuros: number,
-  valorAmortizacao: number,
-  tipo: 'apenas-juros' | 'juros-amortizacao' | 'quitacao-total'
-): Pagamento {
-  return {
-    id: gerarId(),
-    emprestimoId,
-    parcelaId,
-    dataPagamento: formatarData(new Date()),
-    valorJuros,
-    valorAmortizacao,
-    valorTotal: valorJuros + valorAmortizacao,
-    tipo,
-    saldoDevedorApos: 0, // Será calculado depois
-  };
-}
-
-/**
- * Atualiza o saldo devedor de um empréstimo
- */
-export function atualizarSaldoDevedor(
-  emprestimo: Emprestimo,
-  valorAmortizacao: number
-): Emprestimo {
-  const novoSaldo = Math.max(0, emprestimo.saldoDevedor - valorAmortizacao);
-  return {
-    ...emprestimo,
-    saldoDevedor: novoSaldo,
-    status: novoSaldo === 0 ? 'quitado' : emprestimo.status,
-  };
-}
-
-/**
- * Calcula estatísticas do dashboard
- */
-export function calcularEstatisticas(dados: DadosApp) {
-  const totalClientes = dados.clientes.length;
-  const totalEmprestados = dados.emprestimos.reduce(
-    (acc, e) => acc + e.valorPrincipal,
-    0
-  );
-  const totalRecebido = dados.pagamentos.reduce(
-    (acc, p) => acc + p.valorTotal,
-    0
-  );
-  const totalEmAberto = dados.emprestimos.reduce(
-    (acc, e) => acc + e.saldoDevedor,
-    0
-  );
-
-  const emprestimosPorStatus = {
-    ativo: dados.emprestimos.filter((e) => e.status === 'ativo').length,
-    quitado: dados.emprestimos.filter((e) => e.status === 'quitado').length,
-    atrasado: dados.emprestimos.filter((e) => e.status === 'atrasado').length,
-  };
-
-  // Identifica atrasos (parcelas vencidas não pagas)
-  const hoje = formatarData(new Date());
-  const totalAtrasado = dados.parcelas
-    .filter((p) => p.status === 'pendente' && p.dataVencimento < hoje)
-    .reduce((acc, p) => acc + p.valorTotal, 0);
-
-  return {
-    totalClientes,
-    totalEmprestados,
-    totalRecebido,
-    totalEmAberto,
-    totalAtrasado,
-    emprestimosPorStatus,
-  };
-}
-
-/**
- * Obtém cliente por ID
- */
-export function obterClientePorId(
-  dados: DadosApp,
-  clienteId: string
-): Cliente | undefined {
-  return dados.clientes.find((c) => c.id === clienteId);
-}
-
-/**
- * Obtém empréstimo por ID
- */
-export function obterEmprestimoPorId(
-  dados: DadosApp,
-  emprestimoId: string
-): Emprestimo | undefined {
-  return dados.emprestimos.find((e) => e.id === emprestimoId);
-}
-
-/**
- * Obtém empréstimos de um cliente
- */
-export function obterEmprestimosDoCliente(
-  dados: DadosApp,
-  clienteId: string
-): Emprestimo[] {
-  return dados.emprestimos.filter((e) => e.clienteId === clienteId);
-}
-
-/**
- * Obtém parcelas de um empréstimo
- */
-export function obterParcelasDoEmprestimo(
-  dados: DadosApp,
-  emprestimoId: string
-): Parcela[] {
-  return dados.parcelas
-    .filter((p) => p.emprestimoId === emprestimoId)
-    .sort((a, b) => a.numeroParcela - b.numeroParcela);
-}
-
-/**
- * Obtém pagamentos de um empréstimo
- */
-export function obterPagamentosDoEmprestimo(
-  dados: DadosApp,
-  emprestimoId: string
-): Pagamento[] {
-  return dados.pagamentos
-    .filter((p) => p.emprestimoId === emprestimoId)
-    .sort((a, b) => new Date(b.dataPagamento).getTime() - new Date(a.dataPagamento).getTime());
-}
-
-/**
- * Marca parcela como paga
- */
-export function marcarParcelaComoPaga(
-  parcela: Parcela,
-  valorPago: number
-): Parcela {
-  return {
-    ...parcela,
-    status: 'pago',
-    dataPagamento: formatarData(new Date()),
-    valorPago,
-  };
-}
-
-/**
- * Verifica se uma parcela está atrasada
- */
-export function estaAtrasada(parcela: Parcela): boolean {
-  if (parcela.status === 'pago') return false;
-  const hoje = formatarData(new Date());
-  return parcela.dataVencimento < hoje;
 }
