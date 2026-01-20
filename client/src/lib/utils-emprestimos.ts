@@ -100,11 +100,11 @@ export function calcularEstatisticas(dados: DadosApp): EstatisticasDashboard {
   const totalEmprestados = emprestimos.reduce((sum, e) => sum + e.valorPrincipal, 0);
   const totalRecebido = emprestimos
     .filter(e => e.status === 'pago')
-    .reduce((sum, e) => sum + (e.valorPago || e.valorTotal), 0);
+    .reduce((sum, e) => sum + (e.valorTotalPago || e.valorTotal), 0);
   
   const totalEmAberto = emprestimos
-    .filter(e => e.status === 'pendente' || e.status === 'proximo')
-    .reduce((sum, e) => sum + e.valorTotal, 0);
+    .filter(e => e.status !== 'pago')
+    .reduce((sum, e) => sum + e.saldoDevedor, 0);
   
   const totalVencidos = emprestimos
     .filter(e => e.status === 'vencido')
@@ -205,7 +205,7 @@ export function calcularJurosPrevistosDoMes(emprestimos: Emprestimo[]): number {
       const dataVencimento = new Date(e.dataVencimento);
       return dataVencimento.getMonth() === mesAtual && dataVencimento.getFullYear() === anoAtual;
     })
-    .reduce((sum, e) => sum + e.valorJuros, 0);
+    .reduce((sum, e) => sum + e.valorJurosAtual, 0);
 }
 
 /**
@@ -222,12 +222,7 @@ export function calcularJurosRecebidosDoMes(emprestimos: Emprestimo[], pagamento
       return dataPagamento.getMonth() === mesAtual && dataPagamento.getFullYear() === anoAtual;
     })
     .reduce((sum, p) => {
-      const emprestimo = emprestimos.find(e => e.id === p.emprestimoId);
-      if (emprestimo) {
-        // Calcula a proporção de juros no pagamento
-        const proporcaoJuros = emprestimo.valorJuros / emprestimo.valorTotal;
-        return sum + (p.valorPago * proporcaoJuros);
-      }
-      return sum;
+      // Usa jurosAbatidos do pagamento diretamente
+      return sum + p.jurosAbatidos;
     }, 0);
 }

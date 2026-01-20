@@ -83,7 +83,7 @@ export function EmprestimosProvider({ children }: { children: React.ReactNode })
   }) => {
     const dataEmprestimo = new Date().toISOString().split('T')[0];
     const dataVencimento = calcularDataVencimento(dataEmprestimo, emprestimoData.periodoTipo);
-    const valorJuros = calcularJuros(emprestimoData.valorPrincipal, emprestimoData.percentualJuros);
+    const valorJurosAtual = calcularJuros(emprestimoData.valorPrincipal, emprestimoData.percentualJuros);
     const diasParaVencer = calcularDiasParaVencer(dataVencimento);
     const status = determinarStatus(dataVencimento, false);
 
@@ -92,14 +92,17 @@ export function EmprestimosProvider({ children }: { children: React.ReactNode })
       clienteId: emprestimoData.clienteId,
       clienteNome: emprestimoData.clienteNome,
       valorPrincipal: emprestimoData.valorPrincipal,
+      saldoDevedor: emprestimoData.valorPrincipal,
       percentualJuros: emprestimoData.percentualJuros,
-      valorJuros,
-      valorTotal: emprestimoData.valorPrincipal + valorJuros,
+      valorJurosAtual,
+      valorJurosTotal: 0,
+      valorTotal: emprestimoData.valorPrincipal + valorJurosAtual,
       periodoTipo: emprestimoData.periodoTipo,
       dataEmprestimo,
       dataVencimento,
       diasParaVencer,
       status,
+      valorTotalPago: 0,
     };
 
     setDados(prev => ({
@@ -133,8 +136,32 @@ export function EmprestimosProvider({ children }: { children: React.ReactNode })
       const emprestimoAtualizado = prev.emprestimos.find(e => e.id === pagamentoData.emprestimoId);
       
       if (emprestimoAtualizado) {
+        // Lógica correta de pagamento:
+        // 1. Abater juros primeiro
+        // 2. Descontar o restante do principal
+        // 3. Recalcular juros para o novo saldo
+
+        const valorPago = pagamentoData.valorPago;
+        const jurosAtuais = emprestimoAtualizado.valorJurosAtual;
+        
+        let jurosAbatidos = 0;
+        let amortizacaoPrincipal = 0;
+
+        if (valorPago >= jurosAtuais) {
+          // Paga todos os juros e o restante vai para o principal
+          jurosAbatidos = jurosAtuais;
+          amortizacaoPrincipal = valorPago - jurosAtuais;
+        } else {
+          // Paga apenas parte dos juros
+          jurosAbatidos = valorPago;
+          amortizacaoPrincipal = 0;
+        }
+
+        const novoSaldoDevedor = Math.max(0, emprestimoAtualizado.saldoDevedor - amortizacaoPrincipal);
+        const novosJuros = calcularJuros(novoSaldoDevedor, emprestimoAtualizado.percentualJuros);
+        const novoValorTotal = novoSaldoDevedor + novosJuros;
         const novoStatus: 'pendente' | 'pago' | 'vencido' | 'proximo' = 
-          pagamentoData.tipo === 'total' ? 'pago' : emprestimoAtualizado.status;
+          novoSaldoDevedor === 0 ? 'pago' : emprestimoAtualizado.status;
 
         return {
           ...prev,
@@ -143,9 +170,13 @@ export function EmprestimosProvider({ children }: { children: React.ReactNode })
             e.id === pagamentoData.emprestimoId 
               ? {
                   ...e,
+                  saldoDevedor: novoSaldoDevedor,
+                  valorJurosAtual: novosJuros,
+                  valorJurosTotal: (e.valorJurosTotal || 0) + jurosAbatidos,
+                  valorTotal: novoValorTotal,
                   status: novoStatus,
                   dataPagamento: new Date().toISOString().split('T')[0],
-                  valorPago: (e.valorPago || 0) + pagamentoData.valorPago,
+                  valorTotalPago: (e.valorTotalPago || 0) + valorPago,
                 }
               : e
           ),

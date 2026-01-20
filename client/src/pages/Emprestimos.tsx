@@ -244,7 +244,7 @@ export default function Emprestimos() {
                         </div>
                         <div>
                           <p className="text-slate-600">Juros ({emprestimo.percentualJuros}%)</p>
-                          <p className="font-bold text-orange-600">{formatarMoeda(emprestimo.valorJuros)}</p>
+                          <p className="font-bold text-orange-600">{formatarMoeda(emprestimo.valorJurosAtual)}</p>
                         </div>
                         <div>
                           <p className="text-slate-600">Total</p>
@@ -294,12 +294,16 @@ export default function Emprestimos() {
                           <p className="text-slate-600">Dias para Vencer</p>
                           <p className="font-bold">{emprestimo.diasParaVencer} dia(s)</p>
                         </div>
-                        {emprestimo.valorPago && (
+                        {emprestimo.valorTotalPago && emprestimo.valorTotalPago > 0 && (
                           <div>
-                            <p className="text-slate-600">Valor Pago</p>
-                            <p className="font-bold text-green-600">{formatarMoeda(emprestimo.valorPago)}</p>
+                            <p className="text-slate-600">Valor Total Pago</p>
+                            <p className="font-bold text-green-600">{formatarMoeda(emprestimo.valorTotalPago)}</p>
                           </div>
                         )}
+                        <div>
+                          <p className="text-slate-600">Saldo Devedor</p>
+                          <p className="font-bold text-slate-900">{formatarMoeda(emprestimo.saldoDevedor)}</p>
+                        </div>
                       </div>
                     </div>
                   )}
